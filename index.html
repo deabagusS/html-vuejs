@@ -1,0 +1,231 @@
+<html>
+    <head>
+        <title>
+            Dea Bagus Sulaeman
+        </title>
+
+        <link href='assets\font\montserrat.css' rel='stylesheet'>
+        <link rel="stylesheet" href="assets\css\main.css">
+        <link rel="stylesheet" href="assets\css\form.css">
+        <script src="assets\js\vue3.global.prod.js"></script>
+    </head>
+
+    <body>
+        <div class="card" id="checkout">
+            <button class="button__back button__transparant">
+                <img src="assets\image\icon\left-arrow.png" alt="back" class="button__icon"/> 
+                <span>Back to Cart</span>
+            </button>
+
+            <div class="card__title">
+                <ul class="breadcrumb">
+                    <li @click="stepChange('delivery')">
+                        <span class="breadcrumb__badge" :class="{'badge--active': stepIndicator() >= 1}">
+                            <span class="badge__text">1</span>
+                        </span>
+
+                        Delivery
+                    </li>
+                    <li @click="stepChange('payment')">
+                        <span class="breadcrumb__badge" :class="{'badge--active': stepIndicator() >= 2}">
+                            <span class="badge__text">2</span>
+                        </span>
+
+                        Payment
+                    </li>
+                    <li @click="stepChange('finish')">
+                        <span class="breadcrumb__badge" :class="{'badge--active': stepIndicator() >= 3}">
+                            <span class="badge__text">3</span>
+                        </span>
+
+                        Finish
+                    </li>
+                </ul>
+            </div>
+
+            <div class="form">
+                <div class="row">
+                    <div class="col-9">
+                        <div v-if="stepForm === 'delivery'">
+                            <div class="container__title">
+                                <span class="title title--big">Delivery details</span>
+                                <hr class="title__line">
+
+                                <div class="checkbox__input">
+                                    <input type="checkbox" id="dropShip" v-model="form.dropshiper_status">
+                                    <label for="dropShip">Send as dropshipper</label>
+                                </div>
+                            </div>
+
+                            <div class="row container">
+                                <div class="col-7 pd--0">
+                                    <div class="floating" :class="{'input--error' : inputError['email'], 'input--success' : !inputError['email'] && checkRealTimeValidation.delivery === true}">
+                                        <input class="floating__input" type="text" placeholder=" " v-model="form.email">
+                                        <label class="floating__label">Email</label>
+                                        <div v-html="heperText('email', checkRealTimeValidation.delivery)"></div>
+                                    </div>
+
+                                    <div class="floating" :class="{'input--error' : inputError['phone'], 'input--success' : !inputError['phone'] && checkRealTimeValidation.delivery === true}">
+                                        <input class="floating__input" type="text" placeholder=" " v-model="form.phone">
+                                        <label class="floating__label">Phone Number</label>
+                                        <div v-html="heperText('phone', checkRealTimeValidation.delivery)"></div>
+                                    </div>
+
+                                    <div class="floating" :class="{'input--error' : inputError['delivery_address'], 'input--success' : !inputError['delivery_address'] && checkRealTimeValidation.delivery === true}">
+                                        <label class="floating__label__textarea">Delivery Address</label>
+                                        <textarea v-model="form.delivery_address" rows="5" class="floating__input input--textarea"></textarea>
+                                        <div v-html="heperText('delivery_address', checkRealTimeValidation.delivery)"></div>
+
+                                        <small class="floating__input__limit">
+                                            {{form.delivery_address.length}} / {{deliveryAddresLimit}}
+                                        </small>
+                                    </div>
+                                </div>
+
+                                <div class="col-5 pd--0">
+                                    <div class="floating" :class="{'input--error' : inputError['dropshiper_name'], 'input--success' : !inputError['dropshiper_name'] && checkRealTimeValidation.delivery === true && form.dropshiper_status === true}">
+                                        <input class="floating__input" type="text" placeholder=" " v-model="form.dropshiper_name" :disabled="form.dropshiper_status === false">
+                                        <label class="floating__label">Dropshipper Name</label>
+                                        <div v-html="heperText('dropshiper_name', checkRealTimeValidation.delivery)" v-if="form.dropshiper_status === true"></div>
+                                    </div>
+
+                                    <div class="floating" :class="{'input--error' : inputError['dropshiper_phone'], 'input--success' : !inputError['dropshiper_phone'] && checkRealTimeValidation.delivery === true && form.dropshiper_status === true}">
+                                        <input class="floating__input" type="text" placeholder=" " v-model="form.dropshiper_phone" :disabled="form.dropshiper_status === false">
+                                        <label class="floating__label">Dropshipper Phone Number</label>
+                                        <div v-html="heperText('dropshiper_phone', checkRealTimeValidation.delivery)" v-if="form.dropshiper_status === true"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-if="stepForm === 'payment'">
+                            <div class="container__title">
+                                <span class="title title--big">Shipment</span>
+                                <hr class="title__line">                                
+                            </div>
+                            
+                            <div class="container">
+                                <div class="row">
+                                    <div class="col-3 pd--0" v-for="(item, index) of deliveryList" :key="index">
+                                        <div class="option__input" 
+                                            :class="{'option--select': form.delivery_method && item.id === form.delivery_method.id }" 
+                                            @click="calculateDeliveryFee(item)"
+                                        >
+                                            <div class="input__text">
+                                                <div>{{item.name}}</div>
+                                                <div class="input__prize">{{formatPrice(item.amount)}}</div>
+                                            </div>
+
+                                            <img src="assets\image\icon\check.png" 
+                                                alt="success" class="input__icon" 
+                                                v-if="form.delivery_method && item.id === form.delivery_method.id" 
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <small class="text--error" v-if="inputError['delivery_method']">{{inputError['delivery_method']}}</small>
+                            </div>
+
+                            <div class="container__title">
+                                <span class="title title--big">Payment</span>
+                                <hr class="title__line">                                
+                            </div>
+                            
+                            <div class="container">
+                                <div class="row">
+                                    <div class="col-3 pd--0" v-for="(item, index) of paymentList" :key="index">
+                                        <div class="option__input" 
+                                            :class="{'option--select': form.payment_method && item.id === form.payment_method.id }" 
+                                            @click="selectPayment(item)"
+                                        >
+                                            <div class="input__text" v-if="item.amount">
+                                                <div>{{item.name}}</div>
+                                                <div class="input__prize">{{formatPrice(item.amount)}} left</div>
+                                            </div>
+                                            <div class="input__text input--big" v-else>{{item.name}}</div>
+
+                                            <img src="assets\image\icon\check.png" 
+                                                alt="success" class="input__icon" 
+                                                v-if="form.payment_method && item.id === form.payment_method.id" 
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <small class="text--error" v-if="inputError['payment_method']">{{inputError['payment_method']}}</small>
+                            </div>
+                        </div>
+
+                        <div v-if="stepForm === 'finish'">
+                            <div class="container__finish">
+                                <div class="container__title">
+                                    <span class="title title--big">Thank you</span>
+                                    <hr class="title__line">                                
+                                </div>
+    
+                                <div class="finish__order">Order Id: {{orderId}}</div>
+                                <div class="finish__info">Your order will be delivered {{deliveryEstimateValue}}</div>
+
+                                <button class="finish__button" @click="clearData">
+                                    <img src="assets\image\icon\left-arrow.png" alt="back" class="finish__icon"/> 
+                                    <span>Go to Homepage</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                  
+                    <div class="col-3 container__summary summary--border">
+                        <div class="title title--medium">Summary</div>
+                        
+                        <div class="summary__list">
+                            <div class="list__row">
+                                <span class="list__label">{{itemTotal}} items purchased</span>
+                            </div>
+                            <div class="list__row" :class="{'list--hide' : stepForm === 'delivery'}">
+                                <div class="list__border">&nbsp;</div>
+                                <div class="list__label">Delivery estimation</div>
+                                <div class="list__value" v-if="deliveryEstimateValue">{{deliveryEstimateValue}}</div>
+                                <div v-else>-</div>
+                            </div>
+                            <div class="list__row" :class="{'list--hide' : stepForm === 'delivery'}">
+                                <div class="list__border">&nbsp;</div>
+                                <div class="list__label">Payment method</div>
+                                <div class="list__value" v-if="paymentValue">{{paymentValue}}</div>
+                                <div v-else>-</div>
+                            </div>
+                        </div>
+
+                        <div class="summary__list__price">
+                            <div class="price__detail">
+                                <div class="price__detail__row">
+                                    <span class="price__label list--start">Cost of goods</span>
+                                    <span class="price__value list--end">{{formatPrice(cost)}}</span>
+                                </div>
+                                <div class="price__detail__row">
+                                    <span class="price__label list--start">Dropshiping Fee</span>
+                                    <span class="price__value list--end">{{formatPrice(dropshiperFee)}}</span>
+                                </div>
+                                <div class="price__detail__row" v-if="stepForm !== 'delivery'">
+                                    <span class="price__label list--start">{{deliveryValue}}Shipment</span>
+                                    <span class="price__value list--end">{{formatPrice(shipmentFee)}}</span>
+                                </div>
+                            </div>
+
+                            <div class="price__total price__detail__row title title--medium">
+                                <span class="list--start">Total</span>
+                                <span class="list--end">{{formatPrice(paymentTotal)}}</span>
+                            </div>                            
+                        
+                            <button class="price_button" @click="submit()" v-if="stepIndicator() < 3">
+                                {{stepButtonLabel()}}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="assets\js\checkout.js"></script>
+    </body>
+</html>
